@@ -11,17 +11,15 @@ _Tested on Python versions >= 3.6_
 ## Installation
 
 ### Downloading and Installing The Python Script
-```pwsh
+```bash
 git clone "https://github.com/SafwanLjd/EgyBestCLI.git"
-git clone "https://github.com/SafwanLjd/PyEgyBest.git"
-pip install ./PyEgyBest
 cd EgyBestCLI
 pip install -r requirements.txt
 python ./egybest-cli.py --help
 ```
 
 ### Downloading The Windows Binary
-```pwsh
+```bash
 curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/1.0/egybest-cli.zip"
 tar -xf egybest-cli.zip
 cd egybest-cli
@@ -45,22 +43,22 @@ cd egybest-cli
 
 ### Examples
 Download The Movie "Back to The Future"
-```pwsh
+```bash
 egybest-cli --title "Back to The Future"
 ```
 
 Download The First Episode of The First Season of The Show "Game of Thrones"
-```pwsh
+```bash
 egybest-cli --title "Game of Thrones" -S 1 -E 1
 ```
 
 Download All the Episodes of The Third Season of The Show "Peaky Blinders"
-```pwsh
+```bash
 egybest-cli --title "Peaky Blinders" -S 3
 ```
 
 Play The Fifth Episode of the Fourth Season of The Show "Mr. Robot" Directly in The MPV Video Player
-```pwsh
+```bash
 mpv $(egybest-cli --title "Mr. Robot" -S 4 -E 5 --stdout)
 ```
 
