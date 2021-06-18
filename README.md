@@ -20,10 +20,8 @@ python ./egybest-cli.py --help
 
 ### Downloading The Windows Binary
 ```bash
-curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/1.0/egybest-cli.zip"
-tar -xf egybest-cli.zip
-cd egybest-cli
-./egybest-cli.exe --help 
+curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.1/egybest.exe"
+./egybest.exe --help
 ``` 
 
 
