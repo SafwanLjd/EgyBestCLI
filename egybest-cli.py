@@ -1,12 +1,23 @@
 #!/usr/bin/env python3
 
 from pySmartDL import SmartDL
-from shutil import copyfile
 from pathlib import Path
 from egybest import *
 import click
 import json
 import os
+
+DEFAULT_CONFIG = \
+"""{
+	"quality": {
+		"2160": 1,
+		"1080": 2,
+		"720":  3,
+		"480":  4,
+		"360":  5,
+		"240":  6
+	}
+}"""
 
 try:
     HOME_DIR = str(Path.home())
@@ -17,10 +28,12 @@ try:
         os.mkdir(CONFIG_DIR)
 
     if not os.path.isfile(CONFIG_FILE):
-        copyfile("./defaults.json", CONFIG_FILE)
+        with open(CONFIG_FILE, "w") as file:
+            file.write(DEFAULT_CONFIG)
 
     CONFIG_DATA = json.loads(open(CONFIG_FILE, "r").read())
     QUALITY_PREFERENCE = CONFIG_DATA["quality"]
+
 except Exception as exception:
     print(f"Exception Durring Checking Config File: {exception}")
 
