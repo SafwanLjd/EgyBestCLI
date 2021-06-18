@@ -3,33 +3,34 @@
 from pySmartDL import SmartDL
 from shutil import copyfile
 from pathlib import Path
-from time import sleep
 from egybest import *
 import click
 import json
 import os
 
-HOME_DIR = str(Path.home())
-CONFIG_DIR = f"{HOME_DIR}/.config"
-CONFIG_FILE = f"{CONFIG_DIR}/egybest-conf.json"
+try:
+    HOME_DIR = str(Path.home())
+    CONFIG_DIR = f"{HOME_DIR}/.config"
+    CONFIG_FILE = f"{CONFIG_DIR}/egybest-conf.json"
 
-if not os.path.isdir(CONFIG_DIR):
-    os.mkdir(CONFIG_DIR)
+    if not os.path.isdir(CONFIG_DIR):
+        os.mkdir(CONFIG_DIR)
 
-if not os.path.isfile(CONFIG_FILE):
-    copyfile("./defaults.json", CONFIG_FILE)
+    if not os.path.isfile(CONFIG_FILE):
+        copyfile("./defaults.json", CONFIG_FILE)
 
-CONFIG_DATA = json.loads(open(CONFIG_FILE, "r").read())
-QUALITY_PREFERENCE = CONFIG_DATA['quality']
+    CONFIG_DATA = json.loads(open(CONFIG_FILE, "r").read())
+    QUALITY_PREFERENCE = CONFIG_DATA["quality"]
+except Exception as exception:
+    print(f"Exception Durring Checking Config File: {exception}")
 
 
-
-@click.option('-o', '--stdout', is_flag=True, help='Print The Video URL to Standard Output')
-@click.option('-ms', '--manual-search', is_flag=True, help='Select From Search Results Manually')
-@click.option('-mq', '--manual-quality', is_flag=True, help='Select The Video Quality Manually')
-@click.option('-e', '-E', '--episode')
-@click.option('-s', '-S', '--season')
-@click.option('-t', '--title', required=True, help='The Name of The Desired Movie/Show')
+@click.option("-o", "--stdout", is_flag=True, help="Print The Video URL to Standard Output")
+@click.option("-ms", "--manual-search", is_flag=True, help="Select From Search Results Manually")
+@click.option("-mq", "--manual-quality", is_flag=True, help="Select The Video Quality Manually")
+@click.option("-e", "-E", "--episode")
+@click.option("-s", "-S", "--season")
+@click.option("-t", "--title", required=True, help="The Name of The Desired Movie/Show")
 @click.command()
 def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_search: bool, stdout: bool):
     """A Command-Line Interface Wrapper For EgyBest That Allows You to Download Movies, Episodes, and Even Whole Seasons!"""
@@ -41,9 +42,9 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
     if stdout and (manual_quality or manual_search):
         errorMessage = ""
         if manual_search:
-            errorMessage += "Error: You Can't Select From Search Manually Because You Specified --stdout\nThe Closest Result to Your Search Query Will Be Chosen Automatically.\n"
+            errorMessage += "Error: You Can Not Select From Search Manually Because You Specified --stdout\nThe Closest Result to Your Search Query Will Be Chosen Automatically.\n"
         if manual_quality:
-            errorMessage += "Error: You Can't Select The Video Quality Manually Because You Specified --stdout\nPlease Set The Video Quality Preferences in The \"~/.config/egybest-conf.json\" File.\n"
+            errorMessage += "Error: You Can Not Select The Video Quality Manually Because You Specified --stdout\nPlease Set The Video Quality Preferences in The \"~/.config/egybest-conf.json\" File.\n"
 
         raise ValueError(errorMessage)
 
@@ -84,7 +85,7 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
 
         season = int(season) - 1
         if season >= len(seasons):
-            raise IndexError("The Specified Season Doesn't Exist on EgyBest!")
+            raise IndexError("The Specified Season Does Not Exist on EgyBest!")
 
         selectedSeason = seasons[season]
 
@@ -94,7 +95,7 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
         if not bulk:
             episode = int(episode) - 1
             if episode >= len(episodes):
-                raise IndexError("The Specified Episode Doesn't Exist on EgyBest!")
+                raise IndexError("The Specified Episode Does Not Exist on EgyBest!")
 
             selectedEpisodes = [episodes[episode]]
 
@@ -157,10 +158,15 @@ def download(downloadSource):
 
 
 
-if __name__ == '__main__':
-    try:
-        egybest(prog_name='egybest')
-    except Exception as exception:
-        print(exception)
-    except KeyboardInterrupt:
-        print("Aborted!")
+if __name__ == "__main__":
+
+    if "QUALITY_PREFERENCE" in globals() and QUALITY_PREFERENCE:
+        
+        try:
+            egybest(prog_name="egybest")
+        
+        except Exception as exception:
+            print(exception)
+        
+        except KeyboardInterrupt:
+            print("Aborted!")
