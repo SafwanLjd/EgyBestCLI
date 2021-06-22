@@ -8,6 +8,8 @@ import tkvlc
 import json
 import os
 
+ICON_URL = "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.2/EgyBest.ico"
+
 DEFAULT_CONFIG = \
 """{
 	"quality": {
@@ -24,6 +26,7 @@ try:
     HOME_DIR = str(Path.home())
     CONFIG_DIR = f"{HOME_DIR}/.config"
     CONFIG_FILE = f"{CONFIG_DIR}/egybest-conf.json"
+    ICON_FILE = f"{CONFIG_DIR}/EgyBest.ico"
 
     if not os.path.isdir(CONFIG_DIR):
         os.mkdir(CONFIG_DIR)
@@ -35,12 +38,15 @@ try:
     CONFIG_DATA = json.loads(open(CONFIG_FILE, "r").read())
     QUALITY_PREFERENCE = CONFIG_DATA["quality"]
 
+    if not os.path.isfile(ICON_FILE):
+        SmartDL(urls=ICON_URL, dest=ICON_FILE, progress_bar=False).start()
+
 except Exception as exception:
     try:
         CONFIG_DATA = json.loads(DEFAULT_CONFIG)
         QUALITY_PREFERENCE = CONFIG_DATA["quality"]
     finally:
-        print(f"Exception Durring Checking Config File: {exception}")
+        print(f"Exception: {exception}")
 
 
 @click.option("-o", "--stdout", is_flag=True, help="Print The Video URL to Standard Output")
@@ -56,7 +62,10 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
     isMovie = (season is None)
 
     if not isMovie and not season.isdigit():
-        raise TypeError("--season Must Have A Numerical Value")
+        raise TypeError("--season Must Have A Numerical Value.")
+    
+    if isMovie and episode:
+        stdout or print("Ignoring --episode And Searching For A Movie Because No Season Was Specified")
 
     if stdout and (manual_quality or manual_search):
         errorMessage = ""
@@ -71,7 +80,10 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
         print("Ignoring --stdout Because You Specified --watch")
         stdout = False
 
-    bulk = (not isMovie and episode is None)
+    bulk = (not isMovie and not episode)
+
+    if not isMovie and not bulk and not episode.isdigit():
+        raise TypeError("--episode Must Have A Numerical Value.")
 
     stdout or print("Searching... ")
     eb = EgyBest()
@@ -93,13 +105,17 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
             choice = input(f"\nWhich One Did You Mean [1-{resultsLength}]? ")
 
             if not choice.isdigit():
-                raise TypeError(f"Error: You Can Only Pass A Number [1-{resultsLength}]")
-            elif choice < 0 or choice >= resultsLength:
-                raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {resultsLength}, But You Chose \"{choice}\"")
+                raise TypeError(f"Error: You Can Only Pass A Number [1-{resultsLength}].")
 
-            searchResult = results(int(choice) - 1)
+            choice = int(choice)
+            if choice < 0 or choice >= resultsLength:
+                raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {resultsLength}, But You Chose \"{choice}\".")
+
+            searchResult = results(choice - 1)
     else:
         searchResult = results[0]
+    
+    stdout or print(f"Found \"{searchResult.title}\"... ")
 
     if isMovie:
         selectedEpisodes = [searchResult]
@@ -127,7 +143,7 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
             selectedEpisodes = episodes        
 
     stdout or print(f"Getting Media Link", end="")
-    stdout or (bulk and print(f" For {len(selectedEpisodes)} Episodes (Might Take A Few Minutes)", end=""))
+    stdout or (bulk and print(f"s For {len(selectedEpisodes)} Episodes (Might Take A Few Minutes)", end=""))
     stdout or print("... ")
 
     downloadSources = []
@@ -144,29 +160,30 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
                 for i in range(downloadOptionsLength):
                     print(f"{i+1}- {downloadOptions[i].quality}p")
 
-                choice = input(
-                    f"Select Your Preferred Video Quality [1-{downloadOptionsLength}]: ")
+                choice = input(f"Select Your Preferred Video Quality [1-{downloadOptionsLength}]: ")
 
                 if not choice.isdigit():
-                    raise TypeError(
-                        f"Error: You Can Only Pass A Number [1-{downloadOptionsLength}]")
-                elif choice <= 0 or choice > downloadOptionsLength:
-                    raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {downloadOptionsLength}, But You Chose \"{choice}\"")
+                    raise TypeError(f"Error: You Can Only Pass A Number [1-{downloadOptionsLength}].")
+                
+                choice = int(choice)
+                if choice <= 0 or choice > downloadOptionsLength:
+                    raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {downloadOptionsLength}, But You Chose \"{choice}\".")
 
-                downloadSources.append(downloadOptions[int(choice) - 1])
+                downloadSources.append(downloadOptions[choice - 1])
         else:
             if manual_quality and bulk:
                 print("Ignoring --maunal-quality Because You Selected A Whole Season, Getting Quality Preferences From The Config File")
 
-            downloadOptions.sort(
-                key=lambda element: QUALITY_PREFERENCE[str(element.quality)])
+            downloadOptions.sort(key=lambda element: QUALITY_PREFERENCE[str(element.quality)])
             downloadSources.append(downloadOptions[0])
 
     if stdout:
         for downloadSource in downloadSources:
             print(downloadSource.link)
     elif watch:
-        player = tkvlc.Player(downloadSource.link, " ".join(downloadSource.title.replcae(".mp4", "").split("-")).title(), "./EgyBest.ico")
+        downloadSource = downloadSources[0]
+        windowTitle = " ".join(downloadSource.fileName.replace("-ep-", "-episode-").split("-")[:-1]).title() + " - " + str(downloadSource.quality) + "p"
+        player = tkvlc.Player(downloadSource.link, title=windowTitle, iconPath=ICON_FILE)
         player.start()
     else:
         for downloadSource in downloadSources:
