@@ -4,6 +4,7 @@ from pySmartDL import SmartDL
 from pathlib import Path
 from egybest import *
 import click
+import tkvlc
 import json
 import os
 
@@ -35,17 +36,22 @@ try:
     QUALITY_PREFERENCE = CONFIG_DATA["quality"]
 
 except Exception as exception:
-    print(f"Exception Durring Checking Config File: {exception}")
+    try:
+        CONFIG_DATA = json.loads(DEFAULT_CONFIG)
+        QUALITY_PREFERENCE = CONFIG_DATA["quality"]
+    finally:
+        print(f"Exception Durring Checking Config File: {exception}")
 
 
 @click.option("-o", "--stdout", is_flag=True, help="Print The Video URL to Standard Output")
+@click.option("-w", "--watch", is_flag=True, help="Watch Directly Without Downloading")
 @click.option("-ms", "--manual-search", is_flag=True, help="Select From Search Results Manually")
 @click.option("-mq", "--manual-quality", is_flag=True, help="Select The Video Quality Manually")
 @click.option("-e", "-E", "--episode")
 @click.option("-s", "-S", "--season")
 @click.option("-t", "--title", required=True, help="The Name of The Desired Movie/Show")
 @click.command()
-def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_search: bool, stdout: bool):
+def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_search: bool, watch: bool, stdout: bool):
     """A Command-Line Interface Wrapper For EgyBest That Allows You to Download Movies, Episodes, and Even Whole Seasons!"""
     isMovie = (season is None)
 
@@ -61,10 +67,15 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
 
         raise ValueError(errorMessage)
 
+    if watch and stdout:
+        print("Ignoring --stdout Because You Specified --watch")
+        stdout = False
+
     bulk = (not isMovie and episode is None)
 
     stdout or print("Searching... ")
-    results = search(title, includeMovies=isMovie, includeShows=(not isMovie))
+    eb = EgyBest()
+    results = eb.search(title, includeMovies=isMovie, includeShows=(not isMovie))
     resultsLength = len(results)
 
     if resultsLength == 0:
@@ -154,6 +165,9 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
     if stdout:
         for downloadSource in downloadSources:
             print(downloadSource.link)
+    elif watch:
+        player = tkvlc.Player(downloadSource.link, " ".join(downloadSource.title.replcae(".mp4", "").split("-")).title(), "./EgyBest.ico")
+        player.start()
     else:
         for downloadSource in downloadSources:
             download(downloadSource)
