@@ -20,7 +20,7 @@ python ./egybest-cli.py --help
 
 ### Downloading The Windows Binary
 ```bash
-curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.1/egybest-cli.exe"
+curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.2/egybest-cli.exe"
 ./egybest-cli.exe --help
 ``` 
 
@@ -32,7 +32,8 @@ curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.1/egybest-
 * Download A Movie
 * Download An Episode of A TV Show
 * Download A Whole Season of A TV Show
-* Print The Direct Media URL of an Episode/Movie (or All The Episode URLs of A Season, One URL Per Line) to Standard Output So You Can Do Stuff Like Pipe It Into Your Favorite Video Player
+* Watch An Episode/Movie Directly Through An Embeded Video Player
+* Print The Direct Media URL of An Episode/Movie (or All The Episode URLs of A Season, One URL Per Line) to Standard Output So You Can Do Stuff Like Pipe It Into Your Favorite Video Player
 
 ### Default Behavior
 **The Script by default:**
@@ -53,6 +54,11 @@ egybest-cli --title "Game of Thrones" -S 1 -E 1
 Download All the Episodes of The Third Season of The Show "Peaky Blinders"
 ```bash
 egybest-cli --title "Peaky Blinders" -S 3
+```
+
+Play The Third Episode of The Fifth Season of The Show "Black Mirror" in An Embeded Video Player
+```bash
+egybest-cli -t "Black Mirror" --season 5 --episode 3 --watch
 ```
 
 Play The Fifth Episode of the Fourth Season of The Show "Mr. Robot" Directly in The MPV Video Player
