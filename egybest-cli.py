@@ -129,7 +129,7 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
 
         selectedSeason = seasons[season]
 
-        stdout or print("Getting Episodes... \n")
+        stdout or print("Getting Episodes... ")
         episodes = selectedSeason.getEpisodes()
 
         if not bulk:
@@ -142,7 +142,7 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
         else:
             selectedEpisodes = episodes        
 
-    stdout or print(f"Getting Media Link", end="")
+    stdout or print(f"\nGetting Media Link", end="")
     stdout or (bulk and print(f"s For {len(selectedEpisodes)} Episodes (Might Take A Few Minutes)", end=""))
     stdout or print("... ")
 
