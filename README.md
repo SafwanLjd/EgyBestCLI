@@ -70,7 +70,7 @@ mpv $(egybest-cli --title "Mr. Robot" -S 4 -E 5 --stdout)
 
 ## Configuration
 
-There is a single config file which is `~/.config/egybest-conf.json`
+There is a single config file which is `~/.config/egybest/egybest-conf.json`
 Which is only used for video quality preferences at the moment.
 The default file is set to choose the best available quality.
 
