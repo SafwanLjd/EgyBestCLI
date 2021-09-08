@@ -4,12 +4,15 @@ from pySmartDL import SmartDL
 from pathlib import Path
 from egybest import *
 import click
-import tkvlc
 import json
 import os
 
+HOME_DIR = str(Path.home())
+CONFIG_DIR = f"{HOME_DIR}/.config"
+EGYBEST_DIR = f"{CONFIG_DIR}/egybest"
+CONFIG_FILE = f"{EGYBEST_DIR}/egybest-conf.json"
+ICON_FILE = f"{EGYBEST_DIR}/EgyBest.ico"
 ICON_URL = "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.2/EgyBest.ico"
-
 DEFAULT_CONFIG = \
 """{
 	"quality": {
@@ -22,31 +25,6 @@ DEFAULT_CONFIG = \
 	}
 }"""
 
-try:
-    HOME_DIR = str(Path.home())
-    CONFIG_DIR = f"{HOME_DIR}/.config"
-    CONFIG_FILE = f"{CONFIG_DIR}/egybest-conf.json"
-    ICON_FILE = f"{CONFIG_DIR}/EgyBest.ico"
-
-    if not os.path.isdir(CONFIG_DIR):
-        os.mkdir(CONFIG_DIR)
-
-    if not os.path.isfile(CONFIG_FILE):
-        with open(CONFIG_FILE, "w") as file:
-            file.write(DEFAULT_CONFIG)
-
-    CONFIG_DATA = json.loads(open(CONFIG_FILE, "r").read())
-    QUALITY_PREFERENCE = CONFIG_DATA["quality"]
-
-    if not os.path.isfile(ICON_FILE):
-        SmartDL(urls=ICON_URL, dest=ICON_FILE, progress_bar=False).start()
-
-except Exception as exception:
-    try:
-        CONFIG_DATA = json.loads(DEFAULT_CONFIG)
-        QUALITY_PREFERENCE = CONFIG_DATA["quality"]
-    finally:
-        print(f"Exception: {exception}")
 
 
 @click.option("-o", "--stdout", is_flag=True, help="Print The Video URL to Standard Output")
@@ -59,140 +37,147 @@ except Exception as exception:
 @click.command()
 def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_search: bool, watch: bool, stdout: bool):
     """A Command-Line Interface Wrapper For EgyBest That Allows You to Download Movies, Episodes, and Even Whole Seasons!"""
-    isMovie = (season is None)
+    is_movie = (season is None)
 
-    if not isMovie and not season.isdigit():
+    if not is_movie and not season.isdigit():
         raise TypeError("--season Must Have A Numerical Value.")
     
-    if isMovie and episode:
+    if is_movie and episode:
         stdout or print("Ignoring --episode And Searching For A Movie Because No Season Was Specified")
 
     if stdout and (manual_quality or manual_search):
-        errorMessage = ""
+        err_msg = ""
         if manual_search:
-            errorMessage += "Error: You Can Not Select From Search Manually Because You Specified --stdout\nThe Closest Result to Your Search Query Will Be Chosen Automatically.\n"
+            err_msg += "Error: You Can Not Select From Search Manually Because You Specified --stdout\nThe Closest Result to Your Search Query Will Be Chosen Automatically.\n"
         if manual_quality:
-            errorMessage += "Error: You Can Not Select The Video Quality Manually Because You Specified --stdout\nPlease Set The Video Quality Preferences in The \"~/.config/egybest-conf.json\" File.\n"
+            err_msg += "Error: You Can Not Select The Video Quality Manually Because You Specified --stdout\nPlease Set The Video Quality Preferences in The \"~/.config/egybest-conf.json\" File.\n"
 
-        raise ValueError(errorMessage)
+        raise ValueError(err_msg)
 
     if watch and stdout:
         print("Ignoring --stdout Because You Specified --watch")
         stdout = False
 
-    bulk = (not isMovie and not episode)
+    bulk = (not is_movie and not episode)
 
-    if not isMovie and not bulk and not episode.isdigit():
+    if not is_movie and not bulk and not episode.isdigit():
         raise TypeError("--episode Must Have A Numerical Value.")
 
     stdout or print("Searching... ")
     eb = EgyBest()
-    results = eb.search(title, includeMovies=isMovie, includeShows=(not isMovie))
-    resultsLength = len(results)
+    results = eb.search(title, includeMovies=is_movie, includeShows=(not is_movie))
+    results_len = len(results)
 
-    if resultsLength == 0:
+    if results_len == 0:
         raise IndexError(f"No Results Were Found For The Title \"{title}\" on EgyBest!")
 
     if manual_search:
-        if resultsLength == 1:
+        if results_len == 1:
             print("Only Found 1 Result, Ignoring --manual-search")
-            searchResult = results[0]
+            search_result = results[0]
         else:
             print("")
-            for i in range(resultsLength):
+            for i in range(results_len):
                 print(f"{i+1}- {results[i].title}")
 
-            choice = input(f"\nWhich One Did You Mean [1-{resultsLength}]? ")
+            choice = input(f"\nWhich One Did You Mean [1-{results_len}]? ")
 
             if not choice.isdigit():
-                raise TypeError(f"Error: You Can Only Pass A Number [1-{resultsLength}].")
+                raise TypeError(f"Error: You Can Only Pass A Number [1-{results_len}].")
 
             choice = int(choice)
-            if choice < 0 or choice >= resultsLength:
-                raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {resultsLength}, But You Chose \"{choice}\".")
+            if choice < 0 or choice >= results_len:
+                raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {results_len}, But You Chose \"{choice}\".")
 
-            searchResult = results(choice - 1)
+            search_result = results(choice - 1)
     else:
-        searchResult = results[0]
+        search_result = results[0]
     
-    stdout or print(f"Found \"{searchResult.title}\"... ")
+    stdout or print(f"Found \"{search_result.title}\"... ")
 
-    if isMovie:
-        selectedEpisodes = [searchResult]
+    if is_movie:
+        selected_episodes = [search_result]
     else:
         stdout or print("Getting Seasons... ")
-        seasons = searchResult.getSeasons()
+        seasons = search_result.getSeasons()
 
         season = int(season) - 1
         if season >= len(seasons):
             raise IndexError("The Specified Season Does Not Exist on EgyBest!")
 
-        selectedSeason = seasons[season]
+        selected_season = seasons[season]
 
         stdout or print("Getting Episodes... ")
-        episodes = selectedSeason.getEpisodes()
+        episodes = selected_season.getEpisodes()
 
         if not bulk:
             episode = int(episode) - 1
             if episode >= len(episodes):
                 raise IndexError("The Specified Episode Does Not Exist on EgyBest!")
 
-            selectedEpisodes = [episodes[episode]]
+            selected_episodes = [episodes[episode]]
 
         else:
-            selectedEpisodes = episodes        
+            selected_episodes = episodes        
 
     stdout or print(f"\nGetting Media Link", end="")
-    stdout or (bulk and print(f"s For {len(selectedEpisodes)} Episodes (Might Take A Few Minutes)", end=""))
+    stdout or (bulk and print(f"s For {len(selected_episodes)} Episodes (Might Take A Few Minutes)", end=""))
     stdout or print("... ")
 
-    downloadSources = []
-    for i in range(len(selectedEpisodes)):
-        downloadOptions = selectedEpisodes[i].getDownloadSources()
-        downloadOptionsLength = len(downloadOptions)
+    dl_srcs = []
+    for i in range(len(selected_episodes)):
+        dl_options = selected_episodes[i].getDownloadSources()
+        dl_options_len = len(dl_options)
 
         if not bulk and manual_quality:
-            if downloadOptionsLength == 1:
+            if dl_options_len == 1:
                 print("Only Found 1 Quality Option, Ignoring --manual-quality")
-                downloadSources.append(downloadOptions[0])
+                dl_srcs.append(dl_options[0])
             else:
                 print("")
-                for i in range(downloadOptionsLength):
-                    print(f"{i+1}- {downloadOptions[i].quality}p")
+                for i in range(dl_options_len):
+                    print(f"{i+1}- {dl_options[i].quality}p")
 
-                choice = input(f"Select Your Preferred Video Quality [1-{downloadOptionsLength}]: ")
+                choice = input(f"Select Your Preferred Video Quality [1-{dl_options_len}]: ")
 
                 if not choice.isdigit():
-                    raise TypeError(f"Error: You Can Only Pass A Number [1-{downloadOptionsLength}].")
+                    raise TypeError(f"Error: You Can Only Pass A Number [1-{dl_options_len}].")
                 
                 choice = int(choice)
-                if choice <= 0 or choice > downloadOptionsLength:
-                    raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {downloadOptionsLength}, But You Chose \"{choice}\".")
+                if choice <= 0 or choice > dl_options_len:
+                    raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {dl_options_len}, But You Chose \"{choice}\".")
 
-                downloadSources.append(downloadOptions[choice - 1])
+                dl_srcs.append(dl_options[choice - 1])
         else:
             if manual_quality and bulk:
                 print("Ignoring --maunal-quality Because You Selected A Whole Season, Getting Quality Preferences From The Config File")
 
-            downloadOptions.sort(key=lambda element: QUALITY_PREFERENCE[str(element.quality)])
-            downloadSources.append(downloadOptions[0])
+            dl_options.sort(key=lambda element: get_quality_prefrence()[str(element.quality)])
+            dl_srcs.append(dl_options[0])
 
     if stdout:
-        for downloadSource in downloadSources:
-            print(downloadSource.link)
+        for dl_src in dl_srcs:
+            print(dl_src.link)
+
     elif watch:
-        downloadSource = downloadSources[0]
-        windowTitle = " ".join(downloadSource.fileName.replace("-ep-", "-episode-").split("-")[:-1]).title() + " - " + str(downloadSource.quality) + "p"
-        player = tkvlc.Player(downloadSource.link, title=windowTitle, iconPath=ICON_FILE)
+        import tkvlc
+
+        if not os.path.isfile(ICON_FILE):
+            SmartDL(urls=ICON_URL, dest=ICON_FILE, progress_bar=False).start()
+
+        dl_src = dl_srcs[0]
+        window_title = " ".join(dl_src.fileName.split("-")[:-1]).title() + " - " + str(dl_src.quality) + "p"
+        player = tkvlc.Player(dl_src.link, title=window_title, iconPath=ICON_FILE)
         player.start()
+
     else:
-        for downloadSource in downloadSources:
-            download(downloadSource)
+        for dl_src in dl_srcs:
+            download(dl_src)
 
 
-def download(downloadSource):
-    print(f"\nDownloading \"{downloadSource.fileName}\"... ")
-    downloader = SmartDL(urls=downloadSource.link, dest=f"./{downloadSource.fileName}")
+def download(dl_src):
+    print(f"\nDownloading \"{dl_src.fileName}\"... ")
+    downloader = SmartDL(urls=dl_src.link, dest=f"./{dl_src.fileName}")
 
     try:
         downloader.start(blocking=True)
@@ -201,16 +186,35 @@ def download(downloadSource):
         raise InterruptedError("Download Stopped!")
 
 
+def get_quality_prefrence():
+    try:
+        quality_prefrence = json.loads(open(CONFIG_FILE, "r").read())["quality"]
+
+    except Exception as exception:
+        try:
+            if not os.path.isdir(CONFIG_DIR):
+                os.mkdir(CONFIG_DIR)
+            
+            if not os.path.isdir(EGYBEST_DIR):
+                os.mkdir(EGYBEST_DIR)
+            
+            if not os.path.isfile(CONFIG_FILE):
+                with open(CONFIG_FILE, "w") as file:
+                    file.write(DEFAULT_CONFIG)
+
+        finally:
+            quality_prefrence = json.loads(DEFAULT_CONFIG)["quality"]
+
+    return quality_prefrence
+
 
 if __name__ == "__main__":
 
-    if "QUALITY_PREFERENCE" in globals() and QUALITY_PREFERENCE:
-        
-        try:
-            egybest(prog_name="egybest")
-        
-        except Exception as exception:
-            print(exception)
-        
-        except KeyboardInterrupt:
-            print("Aborted!")
+    try:
+        egybest(prog_name="egybest")
+    
+    except Exception as exception:
+        print(exception)
+    
+    except KeyboardInterrupt:
+        print("Aborted!")
