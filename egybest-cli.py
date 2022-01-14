@@ -11,10 +11,10 @@ HOME_DIR = str(Path.home())
 CONFIG_DIR = f"{HOME_DIR}/.config"
 EGYBEST_DIR = f"{CONFIG_DIR}/egybest"
 CONFIG_FILE = f"{EGYBEST_DIR}/egybest-conf.json"
-ICON_FILE = f"{EGYBEST_DIR}/EgyBest.ico"
-ICON_URL = "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.2/EgyBest.ico"
 DEFAULT_CONFIG = \
 """{
+    "mirror": "https://egy.best",
+
 	"quality": {
 		"2160": 1,
 		"1080": 2,
@@ -35,7 +35,7 @@ DEFAULT_CONFIG = \
 @click.option("-s", "-S", "--season")
 @click.option("-t", "--title", required=True, help="The Name of The Desired Movie/Show")
 @click.command()
-def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_search: bool, watch: bool, stdout: bool):
+def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_search: bool, watch: bool, stdout: bool) -> None:
     """A Command-Line Interface Wrapper For EgyBest That Allows You to Download Movies, Episodes, and Even Whole Seasons!"""
     is_movie = (season is None)
 
@@ -64,7 +64,9 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
         raise TypeError("--episode Must Have A Numerical Value.")
 
     stdout or print("Searching... ")
-    eb = EgyBest()
+
+    eb = EgyBest(get_mirror())
+
     results = eb.search(title, includeMovies=is_movie, includeShows=(not is_movie))
     results_len = len(results)
 
@@ -120,14 +122,17 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
         else:
             selected_episodes = episodes        
 
-    stdout or print(f"\nGetting Media Link", end="")
-    stdout or (bulk and print(f"s For {len(selected_episodes)} Episodes (Might Take A Few Minutes)", end=""))
+    stdout or print(f"\nGetting Media Links", end="")
+    stdout or (bulk and print(f" For {len(selected_episodes)} Episodes (Might Take A Few Minutes)", end=""))
     stdout or print("... ")
 
     dl_srcs = []
     for i in range(len(selected_episodes)):
         dl_options = selected_episodes[i].getDownloadSources()
         dl_options_len = len(dl_options)
+
+        if dl_options_len == 0:
+            raise ValueError(f"Error: Couldn't Find Any Media Links")
 
         if not bulk and manual_quality:
             if dl_options_len == 1:
@@ -162,12 +167,9 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
     elif watch:
         import tkvlc
 
-        if not os.path.isfile(ICON_FILE):
-            SmartDL(urls=ICON_URL, dest=ICON_FILE, progress_bar=False).start()
-
         dl_src = dl_srcs[0]
         window_title = " ".join(dl_src.fileName.split("-")[:-1]).title() + " - " + str(dl_src.quality) + "p"
-        player = tkvlc.Player(dl_src.link, title=window_title, iconPath=ICON_FILE)
+        player = tkvlc.Player(dl_src.link, title=window_title)
         player.start()
 
     else:
@@ -175,7 +177,8 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
             download(dl_src)
 
 
-def download(dl_src):
+
+def download(dl_src: str) -> None:
     print(f"\nDownloading \"{dl_src.fileName}\"... ")
     downloader = SmartDL(urls=dl_src.link, dest=f"./{dl_src.fileName}")
 
@@ -185,13 +188,19 @@ def download(dl_src):
         downloader.stop()
         raise InterruptedError("Download Stopped!")
 
+def get_quality_prefrence() -> str:
+    return __get_from_config("quality")
 
-def get_quality_prefrence():
+def get_mirror() -> str:
+    return __get_from_config("mirror")
+
+def __get_from_config(key: str) -> str:
+    value = ""
     try:
-        quality_prefrence = json.loads(open(CONFIG_FILE, "r").read())["quality"]
-
-    except Exception as exception:
         try:
+            file = open(CONFIG_FILE, "r").read()
+
+        except Exception as exception:
             if not os.path.isdir(CONFIG_DIR):
                 os.mkdir(CONFIG_DIR)
             
@@ -201,11 +210,17 @@ def get_quality_prefrence():
             if not os.path.isfile(CONFIG_FILE):
                 with open(CONFIG_FILE, "w") as file:
                     file.write(DEFAULT_CONFIG)
+            
+            file = open(CONFIG_FILE, "r").read()
 
         finally:
-            quality_prefrence = json.loads(DEFAULT_CONFIG)["quality"]
-
-    return quality_prefrence
+            value = json.loads(file)[key]
+    
+    except:
+        value = json.loads(DEFAULT_CONFIG)[key]
+    
+    finally:
+        return value
 
 
 if __name__ == "__main__":

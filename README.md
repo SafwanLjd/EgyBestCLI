@@ -2,7 +2,7 @@
 This is a simple Command-Line tool that allows you to download media from EgyBest.
 You can also use this tool to stream media directly without downloading it using the power of the `--stdout` flag.
 
-_This project depends on the [PyEgyBest](https://github.com/SafwanLjd/PyEgyBest) Library that allows a selenium-less solution to interact with EgyBest_
+_This project depends on the [PyEgyBest](https://github.com/SafwanLjd/PyEgyBest) Library that provides a selenium-less solution to interact with EgyBest_
 
 _Tested on Python versions >= 3.6_
 
@@ -19,6 +19,8 @@ python ./egybest-cli.py --help
 ```
 
 ### Downloading The Windows Binary
+_Not Recommended_
+
 ```bash
 curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.2/egybest-cli.exe"
 ./egybest-cli.exe --help
@@ -56,7 +58,7 @@ Download All the Episodes of The Third Season of The Show "Peaky Blinders"
 egybest-cli --title "Peaky Blinders" -S 3
 ```
 
-Play The Third Episode of The Fifth Season of The Show "Black Mirror" in An Embeded Video Player
+Play The Third Episode of The Fifth Season of The Show "Black Mirror" in An Embeded Video Player (Doesn't Work on macOS and Wayland)
 ```bash
 egybest-cli -t "Black Mirror" --season 5 --episode 3 --watch
 ```
@@ -69,14 +71,13 @@ mpv $(egybest-cli --title "Mr. Robot" -S 4 -E 5 --stdout)
 
 
 ## Configuration
-
 There is a single config file which is `~/.config/egybest/egybest-conf.json`
-Which is only used for video quality preferences at the moment.
-The default file is set to choose the best available quality.
 
-Default File:
+### Default `egybest-conf.json`
 ```json
 {
+	"mirror": "https://egy.best",
+
 	"quality": {
 		"2160": 1,
 		"1080": 2,
@@ -87,4 +88,14 @@ Default File:
 	}
 }
 ```
+
+### Quality
+
 _Lower Number = Higher Priority_
+
+It's set to pick the highest quality available by default.
+
+
+### Mirror
+
+You can set it to a specific EgyBest instance, but these go up and down all the time, the default "mirror" is `https://egy.best`, which is not actually a mirror, it's just a load balancer that redirects you to a working instance.
