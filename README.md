@@ -22,7 +22,7 @@ python ./egybest-cli.py --help
 _Not Recommended_
 
 ```bash
-curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.2/egybest-cli.exe"
+curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.3/egybest-cli.exe"
 ./egybest-cli.exe --help
 ``` 
 
