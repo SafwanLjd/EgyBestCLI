@@ -35,24 +35,31 @@ DEFAULT_CONFIG = \
 @click.option("-s", "-S", "--season")
 @click.option("-t", "--title", required=True, help="The Name of The Desired Movie/Show")
 @click.command()
+
+
+
+
+
+
 def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_search: bool, watch: bool, stdout: bool) -> None:
     """A Command-Line Interface Wrapper For EgyBest That Allows You to Download Movies, Episodes, and Even Whole Seasons!"""
     is_movie = (season is None)
 
+    
     if not is_movie and not season.isdigit():
         raise TypeError("--season Must Have A Numerical Value.")
     
     if is_movie and episode:
         stdout or print("Ignoring --episode And Searching For A Movie Because No Season Was Specified")
 
-    if stdout and (manual_quality or manual_search):
-        err_msg = ""
-        if manual_search:
-            err_msg += "Error: You Can Not Select From Search Manually Because You Specified --stdout\nThe Closest Result to Your Search Query Will Be Chosen Automatically.\n"
-        if manual_quality:
-            err_msg += "Error: You Can Not Select The Video Quality Manually Because You Specified --stdout\nPlease Set The Video Quality Preferences in The \"~/.config/egybest-conf.json\" File.\n"
+    # if stdout and (manual_quality or manual_search):
+    #     err_msg = ""
+    #     if manual_search:
+    #         err_msg += "Error: You Can Not Select From Search Manually Because You Specified --stdout\nThe Closest Result to Your Search Query Will Be Chosen Automatically.\n"
+    #     if manual_quality:
+    #         err_msg += "Error: You Can Not Select The Video Quality Manually Because You Specified --stdout\nPlease Set The Video Quality Preferences in The \"~/.config/egybest-conf.json\" File.\n"
 
-        raise ValueError(err_msg)
+    #     raise ValueError(err_msg)
 
     if watch and stdout:
         print("Ignoring --stdout Because You Specified --watch")
@@ -73,6 +80,7 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
     if results_len == 0:
         raise IndexError(f"No Results Were Found For The Title \"{title}\" on EgyBest!")
 
+        
     if manual_search:
         if results_len == 1:
             print("Only Found 1 Result, Ignoring --manual-search")
@@ -127,6 +135,8 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
     stdout or print("... ")
 
     dl_srcs = []
+    choix=0
+
     for i in range(len(selected_episodes)):
         dl_options = selected_episodes[i].getDownloadSources()
         dl_options_len = len(dl_options)
@@ -134,33 +144,43 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
         if dl_options_len == 0:
             raise ValueError(f"Error: Couldn't Find Any Media Links")
 
-        if not bulk and manual_quality:
-            if dl_options_len == 1:
-                print("Only Found 1 Quality Option, Ignoring --manual-quality")
-                dl_srcs.append(dl_options[0])
+        if manual_quality:
+            if not len(dl_srcs):
+                selected_option,choix=set_quality(dl_options,dl_options_len)
+                dl_srcs.append(selected_option)
             else:
-                print("")
-                for i in range(dl_options_len):
-                    print(f"{i+1}- {dl_options[i].quality}p")
-
-                choice = input(f"Select Your Preferred Video Quality [1-{dl_options_len}]: ")
-
-                if not choice.isdigit():
-                    raise TypeError(f"Error: You Can Only Pass A Number [1-{dl_options_len}].")
+                dl_options.sort(key=lambda element: get_quality_prefrence()[str(element.quality)])
+                print("Setting quality to:",choix+1)
+                dl_srcs.append(dl_options[choix])
                 
-                choice = int(choice)
-                if choice <= 0 or choice > dl_options_len:
-                    raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {dl_options_len}, But You Chose \"{choice}\".")
+            # if dl_options_len == 1:
+            #     print("Only Found 1 Quality Option, Ignoring --manual-quality")
+            #     dl_srcs.append(dl_options[0])
+            # else:
+            #     print("")
+            #     for i in range(dl_options_len):
+            #         print(f"{i+1}- {dl_options[i].quality}p")
 
-                dl_srcs.append(dl_options[choice - 1])
+            #     choice = input(f"Select Your Preferred Video Quality [1-{dl_options_len}]: ")
+
+            #     if not choice.isdigit():
+            #         raise TypeError(f"Error: You Can Only Pass A Number [1-{dl_options_len}].")
+                
+            #     choice = int(choice)
+            #     if choice <= 0 or choice > dl_options_len:
+            #         raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {dl_options_len}, But You Chose \"{choice}\".")
+
+            #     dl_srcs.append(dl_options[choice - 1])
         else:
-            if manual_quality and bulk:
-                print("Ignoring --maunal-quality Because You Selected A Whole Season, Getting Quality Preferences From The Config File")
-
+            # if not manual_quality:
+            # option=set_quality(dl_options)
+            # print("Ignoring --maunal-quality Because You Selected A Whole Season, Getting Quality Preferences From The Config File")
+            print("Default quality set to 360p")
             dl_options.sort(key=lambda element: get_quality_prefrence()[str(element.quality)])
-            dl_srcs.append(dl_options[0])
+            dl_srcs.append(dl_options[3])
 
     if stdout:
+        
         for dl_src in dl_srcs:
             print(dl_src.link)
 
@@ -176,6 +196,26 @@ def egybest(title: str, season: int, episode: int, manual_quality: bool, manual_
         for dl_src in dl_srcs:
             download(dl_src)
 
+
+def set_quality(dl_options,dl_options_len):
+    if dl_options_len == 1:
+        print("Only Found 1 Quality Option, Ignoring --manual-quality")                
+
+        return dl_options[0],0        
+    else:
+        print("")
+        for i in range(dl_options_len):
+            print(f"{i+1}- {dl_options[i].quality}p")
+
+        choice = input(f"Select Your Preferred Video Quality [1-{dl_options_len}]: ")
+
+        if not choice.isdigit():
+            raise TypeError(f"Error: You Can Only Pass A Number [1-{dl_options_len}].")
+        
+        choice = int(choice)
+        if choice <= 0 or choice > dl_options_len:
+            raise IndexError(f"Error: Invalid Choice! The Options Were From 1 to {dl_options_len}, But You Chose \"{choice}\".")
+        return dl_options[choice - 1] , choice - 1
 
 
 def download(dl_src: str) -> None:
