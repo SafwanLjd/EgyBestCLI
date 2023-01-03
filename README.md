@@ -1,8 +1,11 @@
 # EgyBestCLI
+
+**This Project Has Been Discontinued**
+
 This is a simple Command-Line tool that allows you to download media from EgyBest.
 You can also use this tool to stream media directly without downloading it using the power of the `--stdout` flag.
 
-_This project depends on the [PyEgyBest](https://github.com/SafwanLjd/PyEgyBest) Library that provides a selenium-less solution to interact with EgyBest_
+_This project depends on the [PyEgyBest](https://gitlab.com/SafwanLjd/PyEgyBest) Library that provides a selenium-less solution to interact with EgyBest_
 
 _Tested on Python versions >= 3.6_
 
@@ -12,7 +15,7 @@ _Tested on Python versions >= 3.6_
 
 ### Downloading and Installing The Python Script
 ```bash
-git clone "https://github.com/SafwanLjd/EgyBestCLI.git"
+git clone "https://gitlab.com/SafwanLjd/EgyBestCLI.git"
 cd EgyBestCLI
 pip install -r requirements.txt
 python ./egybest-cli.py --help
@@ -22,7 +25,8 @@ python ./egybest-cli.py --help
 _Not Recommended_
 
 ```bash
-curl -o "https://github.com/SafwanLjd/EgyBestCLI/releases/download/v1.3/egybest-cli.exe"
+git clone "https://gitlab.com/SafwanLjd/EgyBestCLI.git"
+cd EgyBestCLI/bin
 ./egybest-cli.exe --help
 ``` 
 
